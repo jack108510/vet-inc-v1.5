@@ -5483,13 +5483,19 @@ window.showC4Plan = function() {
   const planBtn = document.getElementById('c4PlanBtn');
   planBtn.classList.remove('c4-plan-pulse');
   
-  const dropAmt = parseInt(document.getElementById('c4DropSlider').value);
-  const items = c4ProjectedItems.length ? c4ProjectedItems : window.c4Items;
-  if (!items.length) {
-    document.getElementById('c4PlanContent').innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted)">Drag the slider first to set an exam drop amount.</div>';
+  const dropAmt = parseInt(document.getElementById('c4DropSlider').value) || 0;
+  if (dropAmt === 0) {
+    document.getElementById('c4PlanContent').innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted)">Set an exam drop amount using the slider above to see the plan.</div>';
     document.getElementById('c4PlanModal').style.display = 'block';
     return;
   }
+  
+  // Force recalc if no items yet
+  if (!c4ProjectedItems.length && typeof recalcShoppables === 'function') {
+    recalcShoppables(dropAmt);
+  }
+  
+  const items = c4ProjectedItems.length ? c4ProjectedItems : window.c4Items;
   
   const drops = items.filter(i => i.potential_uplift < 0);
   const bumps = items.filter(i => i.potential_uplift >= 0);
@@ -5527,8 +5533,8 @@ window.showC4Plan = function() {
   
   // Pairing bumps section
   if (bumps.length) {
-    html += '<div style="margin-bottom:1rem"><div style="font-size:0.82rem;font-weight:700;color:var(--green);margin-bottom:8px">📈 Items Commonly Paired with Exams</div>';
-    html += '<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">These items appeared on the same visit as exams. Bumps are distributed proportionally based on pairing frequency.</div>';
+    html += '<div style="margin-bottom:1rem"><div style="font-size:0.82rem;font-weight:700;color:var(--green);margin-bottom:8px">📈 Items Commonly Paired with Exams (Real Data)</div>';
+    html += '<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">Based on ' + (examPairings.length ? examPairings.length + ' actual co-occurrences from transaction history' : 'revenue data') + '. Bumps distributed proportionally by pairing frequency.</div>';
     html += '<table style="width:100%;font-size:0.78rem;border-collapse:collapse">';
     html += '<tr style="color:var(--muted);font-size:0.68rem;border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px">Service</th><th style="text-align:right;padding:4px 8px">Paired</th><th style="text-align:right;padding:4px 8px">Current</th><th style="text-align:right;padding:4px 8px">New</th><th style="text-align:right;padding:4px 8px">Bump</th><th style="text-align:right;padding:4px 8px">Gain/yr</th></tr>';
     for (const b of bumps.slice(0, 15)) {
