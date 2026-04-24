@@ -5392,24 +5392,20 @@ window.recalcShoppables = function(dropAmt) {
   const projectedItems = [];
 
   // Calculate total lost revenue from exam drops
-  // HC/HEF not in service_usage_agg, use verified count from services table
   let examCount = 565; // verified unique exam transactions (last 12mo, excl ETL spikes)
+  const examPrice = 80; // verified current price for HC/HEF
   const lostRevenue = dropAmt * examCount;
 
-  // Exam drops
+  // Exam drops - hardcoded since HC/HEF not in service_usage_agg
   for (const code of examCodes) {
-    const price = priceMap[code];
-    if (!price) continue;
-    const usage = usageMap[code];
-    if (!usage) continue;
+    const price = priceMap[code] || examPrice;
     const newPrice = Math.max(0, price - dropAmt);
-    const annualVol = Math.round(usage.rev / price);
-    const drop = (price - newPrice) * annualVol;
+    const drop = (price - newPrice) * examCount;
     projectedItems.push({
-      treatment_code: code, treatment_name: nameLookup[code] || code,
+      treatment_code: code, treatment_name: nameLookup[code] || (code === 'HC' ? 'Health Exam' : 'Health Exam Follow-up'),
       old_price: price, suggested_price: newPrice,
-      annual_volume: annualVol, potential_uplift: -drop,
-      pair_count: usage.count, is_pairing: false
+      annual_volume: examCount, potential_uplift: -lostRevenue,
+      pair_count: examCount, is_pairing: false
     });
   }
 
