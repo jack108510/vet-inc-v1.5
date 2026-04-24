@@ -5512,6 +5512,59 @@ window.showC4Plan = function() {
   document.getElementById('c4PlanModal').style.display = 'block';
 };
 
+// Show the plan popup
+window.showC4Plan = function() {
+  const items = c4ProjectedItems.length ? c4ProjectedItems : window.c4Items;
+  if (!items.length) return;
+  
+  const drops = items.filter(i => i.potential_uplift < 0);
+  const bumps = items.filter(i => i.potential_uplift >= 0);
+  const totalLoss = Math.abs(drops.reduce((s, i) => s + i.potential_uplift, 0));
+  const totalGain = bumps.reduce((s, i) => s + i.potential_uplift, 0);
+  const net = totalGain - totalLoss;
+  const dropAmt = parseInt(document.getElementById('c4DropSlider').value) || 0;
+  
+  let html = '';
+  
+  // Header summary
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1.25rem">';
+  html += sCard('Lost from Drops', '-$' + totalLoss.toLocaleString('en-US', { maximumFractionDigits: 0 }), 'annual', 'var(--red)');
+  html += sCard('Recovered by Bumps', '+$' + totalGain.toLocaleString('en-US', { maximumFractionDigits: 0 }), 'annual', 'var(--green)');
+  html += sCard('Net Impact', (net >= 0 ? '+' : '-') + '$' + Math.abs(net).toLocaleString('en-US', { maximumFractionDigits: 0 }), net >= 0 ? 'profit' : 'gap', net >= 0 ? 'var(--green)' : 'var(--red)');
+  html += '</div>';
+  
+  // Exam drops section
+  html += '<div style="font-size:0.82rem;font-weight:700;color:var(--red);margin-bottom:8px">📉 Exam Price Drops</div>';
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:1.25rem"><tr style="font-size:0.7rem;color:var(--muted);text-align:left"><th style="padding:4px 8px">Item</th><th style="padding:4px 8px;text-align:right">Current</th><th style="padding:4px 8px;text-align:right">New</th><th style="padding:4px 8px;text-align:right">Drop</th><th style="padding:4px 8px;text-align:right">Vol/yr</th><th style="padding:4px 8px;text-align:right">Lost/yr</th></tr>';
+  drops.forEach(d => {
+    html += '<tr style="border-top:1px solid var(--border);font-size:0.78rem"><td style="padding:6px 8px;font-weight:600">' + escHtml(d.treatment_name || d.treatment_code) + '</td>';
+    html += '<td style="padding:6px 8px;text-align:right">$' + d.old_price.toFixed(0) + '</td>';
+    html += '<td style="padding:6px 8px;text-align:right">$' + d.suggested_price.toFixed(0) + '</td>';
+    html += '<td style="padding:6px 8px;text-align:right;color:var(--red);font-weight:700">-$' + (d.old_price - d.suggested_price).toFixed(0) + '</td>';
+    html += '<td style="padding:6px 8px;text-align:right">' + d.annual_volume + '</td>';
+    html += '<td style="padding:6px 8px;text-align:right;color:var(--red);font-weight:700">-$' + Math.abs(d.potential_uplift).toLocaleString('en-US', { maximumFractionDigits: 0 }) + '</td></tr>';
+  });
+  html += '</table>';
+  
+  // Pairing bumps section
+  html += '<div style="font-size:0.82rem;font-weight:700;color:var(--green);margin-bottom:8px">📈 Top Pairing Bumps</div>';
+  html += '<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">These are the highest-volume services commonly paired with exams. Bumping them recovers the lost revenue.</div>';
+  html += '<table style="width:100%;border-collapse:collapse"><tr style="font-size:0.7rem;color:var(--muted);text-align:left"><th style="padding:4px 8px">Item</th><th style="padding:4px 8px;text-align:right">Current</th><th style="padding:4px 8px;text-align:right">New</th><th style="padding:4px 8px;text-align:right">Bump</th><th style="padding:4px 8px;text-align:right">Vol/yr</th><th style="padding:4px 8px;text-align:right">Gain/yr</th></tr>';
+  bumps.slice(0, 10).forEach(b => {
+    const bumpPct = ((b.suggested_price - b.old_price) / b.old_price * 100).toFixed(1);
+    html += '<tr style="border-top:1px solid var(--border);font-size:0.78rem"><td style="padding:6px 8px;font-weight:600">' + escHtml(b.treatment_name || b.treatment_code) + '</td>';
+    html += '<td style="padding:6px 8px;text-align:right">$' + b.old_price.toFixed(2) + '</td>';
+    html += '<td style="padding:6px 8px;text-align:right">$' + b.suggested_price.toFixed(2) + '</td>';
+    html += '<td style="padding:6px 8px;text-align:right;color:var(--green);font-weight:700">+' + bumpPct + '%</td>';
+    html += '<td style="padding:6px 8px;text-align:right">' + b.annual_volume + '</td>';
+    html += '<td style="padding:6px 8px;text-align:right;color:var(--green);font-weight:700">+$' + b.potential_uplift.toLocaleString('en-US', { maximumFractionDigits: 0 }) + '</td></tr>';
+  });
+  html += '</table>';
+  
+  document.getElementById('c4PlanContent').innerHTML = html;
+  document.getElementById('c4PlanModal').style.display = 'block';
+};
+
 // Activate shoppables campaign
 window.activateShoppables = async function() {
   const btn = document.getElementById('c4ActivateBtn');
