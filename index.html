@@ -1616,6 +1616,7 @@ async function sbFetchAll(table, params) {
 let serviceData = null;
 let pricesData = null;
 let treatmentsData = null;
+let itemNamesMap = null;
  let accountsData = null;
 let microMarginData = null;
 let analyticsReady = false;
@@ -1646,6 +1647,9 @@ async function loadDataAndBuild() {
    const priceRows = await sbFetchAll('prices', 'select=treatment_code,price,updated_at&order=updated_at.asc');
    
    const treatRows = await sbFetchAll('treatments', 'select=code,name,type_flag');
+   const itemNameRows = await sbFetchAll('item_names', 'select=code,name');
+   itemNamesMap = {};
+   for (const r of itemNameRows) itemNamesMap[r.code] = r.name;
    
    const acctRows = await sbFetchAll('accounts', 'select=txn_date,amount_raw,type_flag&order=txn_date.asc');
    
@@ -2242,7 +2246,8 @@ async function campaignFetch(campaign) {
   const treatMap = {};
   const treatTypeMap = {};
   (treatmentsData||[]).forEach(t => {
-    treatMap[t.code] = t.name || t.description || t.code;
+    // item_names table has priority for friendly names
+    treatMap[t.code] = (itemNamesMap && itemNamesMap[t.code]) || t.name || t.code;
     treatTypeMap[t.code] = t.type_flag || '';
   });
   
@@ -3918,7 +3923,7 @@ const WidgetBoard = (() => {
       if (!priceRows || priceRows.length === 0) throw new Error('empty');
 
       const treatNames = {};
-      for (const t of (treatRows||[])) { if (t.code) treatNames[t.code] = t.description || t.name || t.code; }
+      for (const t of (treatRows||[])) { if (t.code) treatNames[t.code] = (itemNamesMap && itemNamesMap[t.code]) || t.name || t.code; }
 
       const usageMap = {};
       for (const r of (svcRows||[])) {
@@ -5405,7 +5410,7 @@ function renderC4Table(items, filter) {
     const typeLabel = isDrop ? '<span style="color:var(--red);font-weight:600">▼ Drop</span>' : '<span style="color:var(--green);font-weight:600">▲ Bump</span>';
     return `<tr style="${isDrop?'background:#fff7ed':''}">
       <td><b>${escHtml(it.treatment_code)}</b></td>
-      <td>${escHtml(it.treatment_name || '')}</td>
+      <td>${escHtml((itemNamesMap && itemNamesMap[it.treatment_code]) || it.treatment_name || '')}</td>
       <td class="num">${typeLabel}</td>
       <td class="num">$${it.old_price.toFixed(2)}</td>
       <td class="num" style="color:${isDrop?'var(--red)':'var(--green)'};font-weight:700">$${it.suggested_price.toFixed(2)}</td>
