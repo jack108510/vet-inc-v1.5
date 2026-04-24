@@ -5253,7 +5253,7 @@ async function loadShoppables() {
       // Get exam counts per week for last 26 weeks
       const examData = [];
       for (let off = 0; off < 5000; off += 1000) {
-        const r = await fetch(SB_URL + '/rest/v1/services?select=service_date&in(code).(%22HC%22,%22HEF%22)&service_date=gte.' + weeksAgo(26) + '&offset=' + off + '&limit=1000', {
+        const r = await fetch(SB_URL + '/rest/v1/services?select=service_date&code=in.(HC,HEF)&service_date=gte.' + weeksAgo(26) + '&offset=' + off + '&limit=1000', {
           headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
         });
         const d = await r.json();
