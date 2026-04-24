@@ -5492,38 +5492,35 @@ window.showC4Plan = function() {
     return;
   }
   
-  // Force recalc if no items yet
   if (!c4ProjectedItems.length && typeof recalcShoppables === 'function') {
     recalcShoppables(dropAmt);
   }
   
   const items = c4ProjectedItems.length ? c4ProjectedItems : window.c4Items;
-  
   const drops = items.filter(i => i.potential_uplift < 0);
   const bumps = items.filter(i => i.potential_uplift >= 0);
   const totalLoss = Math.abs(drops.reduce((s, i) => s + i.potential_uplift, 0));
   const totalGain = bumps.reduce((s, i) => s + i.potential_uplift, 0);
   const net = totalGain - totalLoss;
-  const bumpPct = document.getElementById('c4RequiredBump').textContent;
+  const bumpPct = bumps.length > 0 ? ((bumps[0].suggested_price - bumps[0].old_price) / bumps[0].old_price * 100).toFixed(1) : '0';
   
-  let html = '';
+  var html = '';
   
-  // Header
   html += '<div style="margin-bottom:1rem;padding:1rem;background:#f8faff;border-radius:10px;border:1px solid var(--border)">';
   html += '<div style="font-size:0.78rem;color:var(--muted);margin-bottom:4px">Scenario: Drop exams by $' + dropAmt + '</div>';
   html += '<div style="display:flex;gap:1.5rem;flex-wrap:wrap">';
   html += '<div><span style="font-size:0.68rem;color:var(--muted)">Revenue Lost</span><br><span style="font-size:1.1rem;font-weight:800;color:var(--red)">-$' + totalLoss.toLocaleString('en-US', {maximumFractionDigits:0}) + '</span></div>';
   html += '<div><span style="font-size:0.68rem;color:var(--muted)">Revenue Recovered</span><br><span style="font-size:1.1rem;font-weight:800;color:var(--green)">+$' + totalGain.toLocaleString('en-US', {maximumFractionDigits:0}) + '</span></div>';
   html += '<div><span style="font-size:0.68rem;color:var(--muted)">Net</span><br><span style="font-size:1.1rem;font-weight:800;color:' + (net>=0?'var(--green)':'var(--red)') + '">' + (net>=0?'+':'') + '$' + net.toLocaleString('en-US', {maximumFractionDigits:0}) + '</span></div>';
-  html += '<div><span style="font-size:0.68rem;color:var(--muted)">Bump Needed</span><br><span style="font-size:1.1rem;font-weight:800;color:var(--primary)">+' + bumpPct + '</span></div>';
+  html += '<div><span style="font-size:0.68rem;color:var(--muted)">Uniform Bump</span><br><span style="font-size:1.1rem;font-weight:800;color:var(--primary)">+' + bumpPct + '%</span></div>';
   html += '</div></div>';
   
-  // Exam drops section
+  // Exam drop
   if (drops.length) {
-    html += '<div style="margin-bottom:1rem"><div style="font-size:0.82rem;font-weight:700;color:var(--red);margin-bottom:8px">📉 Exam Price Drops</div>';
+    html += '<div style="margin-bottom:1rem"><div style="font-size:0.82rem;font-weight:700;color:var(--red);margin-bottom:8px">📉 Exam Price Drop</div>';
     html += '<table style="width:100%;font-size:0.78rem;border-collapse:collapse">';
     html += '<tr style="color:var(--muted);font-size:0.68rem;border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px">Service</th><th style="text-align:right;padding:4px 8px">Current</th><th style="text-align:right;padding:4px 8px">New</th><th style="text-align:right;padding:4px 8px">Vol/yr</th><th style="text-align:right;padding:4px 8px">Lost/yr</th></tr>';
-    for (const d of drops) {
+    for (var d of drops) {
       html += '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;font-weight:600">' + escHtml(d.treatment_name || d.treatment_code) + '</td>';
       html += '<td style="text-align:right;padding:6px 8px">$' + d.old_price.toFixed(2) + '</td>';
       html += '<td style="text-align:right;padding:6px 8px;color:var(--red);font-weight:700">$' + d.suggested_price.toFixed(2) + '</td>';
@@ -5533,22 +5530,26 @@ window.showC4Plan = function() {
     html += '</table></div>';
   }
   
-  // Pairing bumps section
+  // Top 50 revenue generators bump
   if (bumps.length) {
-    html += '<div style="margin-bottom:1rem"><div style="font-size:0.82rem;font-weight:700;color:var(--green);margin-bottom:8px">📈 Items Commonly Paired with Exams (Real Data)</div>';
-    html += '<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">Based on ' + (examPairings.length ? examPairings.length + ' actual co-occurrences from transaction history' : 'revenue data') + '. Bumps distributed proportionally by pairing frequency.</div>';
+    html += '<div style="margin-bottom:1rem"><div style="font-size:0.82rem;font-weight:700;color:var(--green);margin-bottom:8px">📈 Top Revenue Services — Uniform +' + bumpPct + '% Bump</div>';
+    html += '<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">' + bumps.length + ' highest-revenue services each get a +' + bumpPct + '% price increase. Higher volume services recover more in total.</div>';
     html += '<table style="width:100%;font-size:0.78rem;border-collapse:collapse">';
-    html += '<tr style="color:var(--muted);font-size:0.68rem;border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px">Service</th><th style="text-align:right;padding:4px 8px">Paired</th><th style="text-align:right;padding:4px 8px">Current</th><th style="text-align:right;padding:4px 8px">New</th><th style="text-align:right;padding:4px 8px">Bump</th><th style="text-align:right;padding:4px 8px">Gain/yr</th></tr>';
-    for (const b of bumps.slice(0, 15)) {
-      const bumpPct = ((b.suggested_price - b.old_price) / b.old_price * 100).toFixed(1);
+    html += '<tr style="color:var(--muted);font-size:0.68rem;border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px">Service</th><th style="text-align:right;padding:4px 8px">Current</th><th style="text-align:right;padding:4px 8px">New</th><th style="text-align:right;padding:4px 8px">Bump</th><th style="text-align:right;padding:4px 8px">Vol/yr</th><th style="text-align:right;padding:4px 8px">Gain/yr</th></tr>';
+    for (var b of bumps.slice(0, 20)) {
+      var bpct = ((b.suggested_price - b.old_price) / b.old_price * 100).toFixed(1);
       html += '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;font-weight:600">' + escHtml(b.treatment_name || b.treatment_code) + '</td>';
-      html += '<td style="text-align:right;padding:6px 8px;color:var(--primary);font-weight:600">' + (b.pair_count || '?') + 'x</td>';
       html += '<td style="text-align:right;padding:6px 8px">$' + b.old_price.toFixed(2) + '</td>';
       html += '<td style="text-align:right;padding:6px 8px;color:var(--green);font-weight:700">$' + b.suggested_price.toFixed(2) + '</td>';
-      html += '<td style="text-align:right;padding:6px 8px;color:var(--green);font-weight:700">+' + bumpPct + '%</td>';
+      html += '<td style="text-align:right;padding:6px 8px;color:var(--green);font-weight:700">+' + bpct + '%</td>';
+      html += '<td style="text-align:right;padding:6px 8px">' + b.annual_volume + '</td>';
       html += '<td style="text-align:right;padding:6px 8px;color:var(--green);font-weight:700">+$' + b.potential_uplift.toLocaleString('en-US', {maximumFractionDigits:0}) + '</td></tr>';
     }
-    html += '</table></div>';
+    html += '</table>';
+    if (bumps.length > 20) {
+      html += '<div style="font-size:0.72rem;color:var(--muted);margin-top:6px">+ ' + (bumps.length - 20) + ' more items with the same bump</div>';
+    }
+    html += '</div>';
   }
   
   // Break-even verdict
@@ -5557,11 +5558,14 @@ window.showC4Plan = function() {
   html += '<div style="font-size:0.75rem;color:var(--muted);margin-top:4px">Net impact: ' + (net>=0?'+':'') + '$' + net.toLocaleString('en-US', {maximumFractionDigits:0}) + '/year</div>';
   html += '</div>';
   
+  // Implement button
+  html += '<div style="margin-top:1rem;text-align:center;padding-bottom:0.5rem">';
+  html += '<button onclick="activateShoppables()" style="background:var(--primary);color:#fff;border:none;padding:10px 28px;border-radius:10px;font-size:0.9rem;font-weight:700;cursor:pointer">Implement Campaign</button>';
+  html += '</div>';
+  
   document.getElementById('c4PlanContent').innerHTML = html;
   document.getElementById('c4PlanModal').style.display = 'block';
 };
-
-// (showC4Plan defined above)
 
 // Activate shoppables campaign
 window.activateShoppables = async function() {
