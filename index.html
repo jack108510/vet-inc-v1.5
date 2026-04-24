@@ -1244,10 +1244,13 @@
      </div></div></div><div id="c3Summary" style="display:flex;gap:2rem;padding:1rem 1.75rem;border-bottom:1px solid var(--border);background:#f8faff;flex-wrap:wrap"></div><button class="campaign-toggle" onclick="toggleCampaign(this)">See More <span class="toggle-arrow">&#9662;</span></button><div class="campaign-body"><div class="table-scroll"><table><thead><tr><th>Item</th><th class="num">Price Increase</th><th class="num">Current &rarr; +5% Bump</th><th class="num">Annual Volume</th><th class="num">Extra Margin / Year</th></tr></thead><tbody id="c3Table"></tbody></table></div></div></div><!-- Campaign 4: Shoppables — Exam Drop Initiative --><div class="campaign-card" style="border-left:4px solid #f59e0b"><div class="campaign-header"><div class="campaign-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div><div class="campaign-meta"><div class="campaign-title">Shoppables — Exam Drop Initiative</div><div class="campaign-desc">Drop exam prices to attract new patients. Top pairing items get a bump to recover the gap. Drag the slider to explore scenarios.</div><div class="campaign-status" id="c4Status">
       <span class="campaign-badge" id="c4Badge" style="display:none"></span><div class="badge inactive" id="c4StatusBadge"><span>&#9679;</span> Not Started</div>
       <button class="btn-activate primary" id="c4ActivateBtn" onclick="activateShoppables()">Start Campaign</button>
+      <button class="implement-btn" id="c4ImplementBtn" onclick="openCampaignImplement('shoppables')" style="margin-left:8px;display:none">Implement Campaign</button>
+      <button class="report-btn" id="c4ReportBtn" onclick="generateReport('shoppables')" style="margin-left:8px;display:none">PDF Report</button>
      </div>
      <div class="campaign-progress" id="c4Progress" style="display:none">
       <div class="progress-bar-wrap"><div class="progress-bar"><div class="fill" id="c4ProgressFill" style="width:0%"></div></div></div>
       <div class="progress-label" id="c4ProgressLabel">0/0 implemented</div>
+      <button class="btn-analytics" onclick="openCampaignAnalytics('shoppables')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> Analytics</button>
      </div></div></div>
 
 <!-- Exam Drop Slider -->
@@ -5261,6 +5264,8 @@ async function loadShoppables() {
       document.getElementById('c4StatusBadge').className = 'badge active';
       document.getElementById('c4StatusBadge').innerHTML = '<span>&#10003;</span> Active';
       document.getElementById('c4ActivateBtn').style.display = 'none';
+      document.getElementById('c4ImplementBtn').style.display = 'inline-block';
+      document.getElementById('c4ReportBtn').style.display = 'inline-block';
       document.getElementById('c4Slider').style.display = 'none';
       
       // Show progress
