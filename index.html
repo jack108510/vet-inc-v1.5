@@ -5214,11 +5214,10 @@ function sCard(label, value, sub, color) {
     riskBadge.style.background = riskBg;
 
     // Calculate required pairing bump % to break even
-    // Get exam usage from the data
-    if (!window.serviceData) return;
+    if (!serviceData) return;
     const examCodes = ['HC', 'HEF'];
     let examVolume = 0;
-    (window.serviceData || []).forEach(r => {
+    (serviceData || []).forEach(r => {
       if (examCodes.includes(r.code)) {
         examVolume += parseFloat(r.total_amount || 0);
       }
@@ -5226,7 +5225,7 @@ function sCard(label, value, sub, color) {
     
     // Total non-exam revenue for pairing bump base
     let pairingRev = 0;
-    (window.serviceData || []).forEach(r => {
+    (serviceData || []).forEach(r => {
       if (!examCodes.includes(r.code)) {
         pairingRev += parseFloat(r.total_amount || 0);
       }
