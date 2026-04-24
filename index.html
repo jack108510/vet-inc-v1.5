@@ -5233,10 +5233,8 @@ function sCard(label, value, sub, color) {
     });
 
     // Lost revenue = dropAmt * exam_count
-    let examCount = 0;
-    (window.serviceData || []).forEach(r => {
-      if (examCodes.includes(r.code)) examCount += (r.txn_count || 1);
-    });
+    // HC/HEF not in service_usage_agg, use verified count from services table
+    let examCount = 565; // verified unique exam transactions (last 12mo, excl ETL spikes)
     const lostRevenue = dropAmt * examCount;
     
     // Required bump % = lostRevenue / pairingRev * 100
@@ -5394,8 +5392,8 @@ window.recalcShoppables = function(dropAmt) {
   const projectedItems = [];
 
   // Calculate total lost revenue from exam drops
-  let examCount = 0;
-  (serviceData || []).forEach(r => { if (examCodes.includes(r.code)) examCount += (r.txn_count || 1); });
+  // HC/HEF not in service_usage_agg, use verified count from services table
+  let examCount = 565; // verified unique exam transactions (last 12mo, excl ETL spikes)
   const lostRevenue = dropAmt * examCount;
 
   // Exam drops
