@@ -5158,6 +5158,17 @@ window.c3Items = [];
 window.c4Items = [];
 let c4ExamChartInstance = null;
 let c4ProjectedItems = [];
+let examPairings = [];
+
+async function loadExamPairings() {
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/exam_pairings_mv?select=*&order=pair_count.desc&limit=30', {
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
+    });
+    examPairings = await res.json();
+    console.log('Loaded', examPairings.length, 'exam pairings');
+  } catch(e) { console.warn('Exam pairings load failed:', e); }
+}
 
 function sCard(label, value, sub, color) {
   return '<div style="text-align:center"><div style="font-size:0.72rem;color:var(--muted)">' + label + '</div><div style="font-size:1.3rem;font-weight:800;color:' + color + '">' + value + '</div><div style="font-size:0.72rem;color:var(--muted)">' + sub + '</div></div>';
@@ -5367,7 +5378,11 @@ window.recalcShoppables = function(dropAmt) {
   if (!pricesData || !serviceData || !treatmentsData) return;
   
   const examCodes = ['HC', 'HEF'];
-  
+  const nameLookup = {};
+  (treatmentsData || []).forEach(t => { nameLookup[t.code] = (itemNamesMap && itemNamesMap[t.code]) || t.name || t.code; });
+  const priceMap = {};
+  (pricesData || []).forEach(p => { if (p.treatment_code && p.price) priceMap[p.treatment_code] = p.price; });
+
   const usageMap = {};
   (serviceData || []).forEach(r => {
     if (!r.code) return;
@@ -5376,21 +5391,12 @@ window.recalcShoppables = function(dropAmt) {
     usageMap[r.code].rev += parseFloat(r.total_amount || r.amount) || 0;
   });
 
-  const nameLookup = {};
-  (treatmentsData || []).forEach(t => { nameLookup[t.code] = (itemNamesMap && itemNamesMap[t.code]) || t.name || t.code; });
-
-  const priceMap = {};
-  (pricesData || []).forEach(p => { if (p.treatment_code && p.price) priceMap[p.treatment_code] = p.price; });
-
   const projectedItems = [];
 
-  // Calculate bump % needed to break even
+  // Calculate total lost revenue from exam drops
   let examCount = 0;
   (serviceData || []).forEach(r => { if (examCodes.includes(r.code)) examCount += (r.txn_count || 1); });
   const lostRevenue = dropAmt * examCount;
-  let pairingRev = 0;
-  (serviceData || []).forEach(r => { if (!examCodes.includes(r.code)) pairingRev += parseFloat(r.total_amount || 0); });
-  const pairingBumpPct = pairingRev > 0 ? lostRevenue / pairingRev : 0;
 
   // Exam drops
   for (const code of examCodes) {
@@ -5404,24 +5410,53 @@ window.recalcShoppables = function(dropAmt) {
     projectedItems.push({
       treatment_code: code, treatment_name: nameLookup[code] || code,
       old_price: price, suggested_price: newPrice,
-      annual_volume: annualVol, potential_uplift: -drop
+      annual_volume: annualVol, potential_uplift: -drop,
+      pair_count: usage.count, is_pairing: false
     });
   }
 
-  // Top pairing bumps with calculated bump %
-  const nonExamCodes = Object.keys(usageMap).filter(c => !examCodes.includes(c) && priceMap[c]).sort((a, b) => usageMap[b].rev - usageMap[a].rev).slice(0, 20);
-  for (const code of nonExamCodes) {
-    const price = priceMap[code];
-    const usage = usageMap[code];
-    if (!price || !usage || usage.count < 10) continue;
-    const newPrice = Math.ceil(price * (1 + pairingBumpPct) * 100) / 100;
-    const annualVol = Math.round(usage.rev / price);
-    const bump = (newPrice - price) * annualVol;
-    projectedItems.push({
-      treatment_code: code, treatment_name: nameLookup[code] || code,
-      old_price: price, suggested_price: newPrice,
-      annual_volume: annualVol, potential_uplift: bump
-    });
+  // Use REAL exam pairings from materialized view
+  if (examPairings.length > 0 && lostRevenue > 0) {
+    // Distribute the needed recovery proportionally across paired items
+    const totalPairRevenue = examPairings.reduce((s, p) => s + parseFloat(p.pair_revenue || 0), 0);
+    
+    for (const pairing of examPairings) {
+      const code = pairing.item_code;
+      const price = priceMap[code] || pairing.avg_price;
+      if (!price) continue;
+      const annualVol = pairing.pair_count;
+      // Each item's share of the bump is proportional to its pairing revenue
+      const share = totalPairRevenue > 0 ? (pairing.pair_revenue / totalPairRevenue) : 0;
+      const itemRecovery = lostRevenue * share;
+      const bumpPerUnit = annualVol > 0 ? itemRecovery / annualVol : 0;
+      const bumpPct = price > 0 ? bumpPerUnit / price : 0;
+      const newPrice = Math.ceil(price * (1 + bumpPct) * 100) / 100;
+      const bump = (newPrice - price) * annualVol;
+      
+      projectedItems.push({
+        treatment_code: code, treatment_name: (itemNamesMap && itemNamesMap[code]) || pairing.item_name || code,
+        old_price: price, suggested_price: newPrice,
+        annual_volume: annualVol, potential_uplift: bump,
+        pair_count: pairing.pair_count, is_pairing: true
+      });
+    }
+  } else if (lostRevenue > 0) {
+    // Fallback: no pairing data loaded, use top revenue items
+    const nonExamCodes = Object.keys(usageMap).filter(c => !examCodes.includes(c) && priceMap[c]).sort((a, b) => usageMap[b].rev - usageMap[a].rev).slice(0, 20);
+    for (const code of nonExamCodes) {
+      const price = priceMap[code];
+      const usage = usageMap[code];
+      if (!price || !usage || usage.count < 10) continue;
+      const newPrice = Math.ceil(price * 1.05 * 100) / 100;
+      const annualVol = Math.round(usage.rev / price);
+      const bump = (newPrice - price) * annualVol;
+      projectedItems.push({
+        treatment_code: code, treatment_name: nameLookup[code] || code,
+        old_price: price, suggested_price: newPrice,
+        annual_volume: annualVol, potential_uplift: bump,
+        pair_count: 0, is_pairing: false
+      });
+    }
   }
 
   projectedItems.sort((a, b) => b.potential_uplift - a.potential_uplift);
@@ -5436,9 +5471,9 @@ window.recalcShoppables = function(dropAmt) {
 
   document.getElementById('c4Summary').innerHTML =
     sCard('Revenue at Risk', '-$' + totalLoss.toLocaleString('en-US', { maximumFractionDigits: 0 }), 'exam price drops', 'var(--red)') +
-    sCard('Recovery Potential', '+$' + totalGain.toLocaleString('en-US', { maximumFractionDigits: 0 }), 'pairing item bumps', 'var(--green)') +
+    sCard('Recovery Potential', '+$' + totalGain.toLocaleString('en-US', { maximumFractionDigits: 0 }), 'real pairing bumps', 'var(--green)') +
     sCard('Net Impact', (net >= 0 ? '+' : '-') + '$' + Math.abs(net).toLocaleString('en-US', { maximumFractionDigits: 0 }), 'projected', net >= 0 ? 'var(--green)' : 'var(--red)') +
-    sCard('Items', projectedItems.length + '', drops.length + ' drops + ' + bumps.length + ' bumps', 'var(--primary)');
+    sCard('Paired Items', bumps.length + '', 'commonly sold with exams', 'var(--primary)');
 
   renderC4Table(projectedItems, 'all');
 };
@@ -5492,15 +5527,17 @@ window.showC4Plan = function() {
   
   // Pairing bumps section
   if (bumps.length) {
-    html += '<div style="margin-bottom:1rem"><div style="font-size:0.82rem;font-weight:700;color:var(--green);margin-bottom:8px">📈 Pairing Bumps to Recover</div>';
-    html += '<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">These are the top items commonly paired with exams. Bumping them by +' + bumpPct + ' recovers the lost revenue.</div>';
+    html += '<div style="margin-bottom:1rem"><div style="font-size:0.82rem;font-weight:700;color:var(--green);margin-bottom:8px">📈 Items Commonly Paired with Exams</div>';
+    html += '<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">These items appeared on the same visit as exams. Bumps are distributed proportionally based on pairing frequency.</div>';
     html += '<table style="width:100%;font-size:0.78rem;border-collapse:collapse">';
-    html += '<tr style="color:var(--muted);font-size:0.68rem;border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px">Service</th><th style="text-align:right;padding:4px 8px">Current</th><th style="text-align:right;padding:4px 8px">New</th><th style="text-align:right;padding:4px 8px">Vol/yr</th><th style="text-align:right;padding:4px 8px">Gain/yr</th></tr>';
+    html += '<tr style="color:var(--muted);font-size:0.68rem;border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 8px">Service</th><th style="text-align:right;padding:4px 8px">Paired</th><th style="text-align:right;padding:4px 8px">Current</th><th style="text-align:right;padding:4px 8px">New</th><th style="text-align:right;padding:4px 8px">Bump</th><th style="text-align:right;padding:4px 8px">Gain/yr</th></tr>';
     for (const b of bumps.slice(0, 15)) {
+      const bumpPct = ((b.suggested_price - b.old_price) / b.old_price * 100).toFixed(1);
       html += '<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:6px 8px;font-weight:600">' + escHtml(b.treatment_name || b.treatment_code) + '</td>';
+      html += '<td style="text-align:right;padding:6px 8px;color:var(--primary);font-weight:600">' + (b.pair_count || '?') + 'x</td>';
       html += '<td style="text-align:right;padding:6px 8px">$' + b.old_price.toFixed(2) + '</td>';
       html += '<td style="text-align:right;padding:6px 8px;color:var(--green);font-weight:700">$' + b.suggested_price.toFixed(2) + '</td>';
-      html += '<td style="text-align:right;padding:6px 8px">' + b.annual_volume + '</td>';
+      html += '<td style="text-align:right;padding:6px 8px;color:var(--green);font-weight:700">+' + bumpPct + '%</td>';
       html += '<td style="text-align:right;padding:6px 8px;color:var(--green);font-weight:700">+$' + b.potential_uplift.toLocaleString('en-US', {maximumFractionDigits:0}) + '</td></tr>';
     }
     html += '</table></div>';
@@ -5676,7 +5713,7 @@ function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 
 // Load campaign state on init
 document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => { CampaignUI.loadCampaignState(); loadShoppables(); }, 1000);
+  setTimeout(() => { CampaignUI.loadCampaignState(); loadExamPairings().then(() => loadShoppables()); }, 1000);
 });
 
 
