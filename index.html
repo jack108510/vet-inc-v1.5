@@ -5391,7 +5391,7 @@ window.recalcShoppables = function(dropAmt) {
 
   const projectedItems = [];
 
-  // Exam drop — 565 is total for both HC+HEF combined (verified, last 12mo excl ETL spikes)
+  // Exam drop — 565 total (verified, last 12mo excl ETL spikes)
   const totalExamCount = 565;
   const examPrice = 80;
   const lostRevenue = dropAmt * totalExamCount;
@@ -5403,52 +5403,61 @@ window.recalcShoppables = function(dropAmt) {
     pair_count: totalExamCount, is_pairing: false
   });
 
-  // Use REAL exam pairings from materialized view
-  if (examPairings.length > 0 && lostRevenue > 0) {
-    // Top 10 items by pairing frequency — highest volume = smallest uniform bump needed
-    const topPairings = examPairings
-      .filter(p => (priceMap[p.item_code] || p.avg_price) > 0)
-      .sort((a, b) => b.pair_count - a.pair_count)
-      .slice(0, 10);
+  if (lostRevenue > 0) {
+    // Build a merged list: exam pairings (real co-occurrence) + top revenue services
+    // More items = smaller bump per item
+    const bumpCandidates = [];
+    const seenCodes = new Set();
     
-    // Single uniform bump % that exactly recovers the lost revenue
-    // totalBase = sum of (price × annual volume) for each top pairing
-    const totalBase = topPairings.reduce((s, p) => {
-      const price = priceMap[p.item_code] || p.avg_price;
-      return s + (price * p.pair_count);
-    }, 0);
-    const uniformBumpPct = totalBase > 0 ? lostRevenue / totalBase : 0;
-    
-    for (const pairing of topPairings) {
-      const code = pairing.item_code;
-      const price = priceMap[code] || pairing.avg_price;
-      if (!price) continue;
-      const annualVol = pairing.pair_count;
-      const newPrice = Math.ceil(price * (1 + uniformBumpPct) * 100) / 100;
-      const bump = (newPrice - price) * annualVol;
-      
-      projectedItems.push({
-        treatment_code: code, treatment_name: (itemNamesMap && itemNamesMap[code]) || pairing.item_name || code,
-        old_price: price, suggested_price: newPrice,
-        annual_volume: annualVol, potential_uplift: bump,
-        pair_count: pairing.pair_count, is_pairing: true
-      });
+    // Priority 1: Real exam pairings from materialized view
+    if (examPairings.length > 0) {
+      for (const p of examPairings) {
+        const price = priceMap[p.item_code] || p.avg_price;
+        if (!price || seenCodes.has(p.item_code)) continue;
+        seenCodes.add(p.item_code);
+        bumpCandidates.push({
+          code: p.item_code,
+          name: (itemNamesMap && itemNamesMap[p.item_code]) || p.item_name || p.item_code,
+          price: price,
+          volume: p.pair_count,
+          is_real_pairing: true
+        });
+      }
     }
-  } else if (lostRevenue > 0) {
-    // Fallback: no pairing data loaded, use top revenue items
-    const nonExamCodes = Object.keys(usageMap).filter(c => !examCodes.includes(c) && priceMap[c]).sort((a, b) => usageMap[b].rev - usageMap[a].rev).slice(0, 20);
-    for (const code of nonExamCodes) {
+    
+    // Priority 2: Top revenue non-exam services to spread the bump thinner
+    const topServices = Object.keys(usageMap)
+      .filter(c => !examCodes.includes(c) && priceMap[c] && !seenCodes.has(c))
+      .sort((a, b) => usageMap[b].rev - usageMap[a].rev)
+      .slice(0, 35);
+    
+    for (const code of topServices) {
       const price = priceMap[code];
       const usage = usageMap[code];
-      if (!price || !usage || usage.count < 10) continue;
-      const newPrice = Math.ceil(price * 1.05 * 100) / 100;
-      const annualVol = Math.round(usage.rev / price);
-      const bump = (newPrice - price) * annualVol;
+      if (!price || !usage || usage.count < 5) continue;
+      seenCodes.add(code);
+      bumpCandidates.push({
+        code: code,
+        name: nameLookup[code] || code,
+        price: price,
+        volume: usage.count,
+        is_real_pairing: false
+      });
+    }
+    
+    // Uniform bump % = lost / sum(price × volume)
+    const totalBase = bumpCandidates.reduce((s, c) => s + (c.price * c.volume), 0);
+    const uniformBumpPct = totalBase > 0 ? lostRevenue / totalBase : 0;
+    
+    for (const cand of bumpCandidates) {
+      const newPrice = Math.ceil(cand.price * (1 + uniformBumpPct) * 100) / 100;
+      const bump = (newPrice - cand.price) * cand.volume;
       projectedItems.push({
-        treatment_code: code, treatment_name: nameLookup[code] || code,
-        old_price: price, suggested_price: newPrice,
-        annual_volume: annualVol, potential_uplift: bump,
-        pair_count: 0, is_pairing: false
+        treatment_code: cand.code, treatment_name: cand.name,
+        old_price: cand.price, suggested_price: newPrice,
+        annual_volume: cand.volume, potential_uplift: bump,
+        pair_count: cand.is_real_pairing ? cand.volume : 0,
+        is_pairing: cand.is_real_pairing
       });
     }
   }
@@ -5467,10 +5476,11 @@ window.recalcShoppables = function(dropAmt) {
     sCard('Revenue at Risk', '-$' + totalLoss.toLocaleString('en-US', { maximumFractionDigits: 0 }), 'exam price drops', 'var(--red)') +
     sCard('Recovery Potential', '+$' + totalGain.toLocaleString('en-US', { maximumFractionDigits: 0 }), 'real pairing bumps', 'var(--green)') +
     sCard('Net Impact', (net >= 0 ? '+' : '-') + '$' + Math.abs(net).toLocaleString('en-US', { maximumFractionDigits: 0 }), 'projected', net >= 0 ? 'var(--green)' : 'var(--red)') +
-    sCard('Paired Items', bumps.length + '', 'commonly sold with exams', 'var(--primary)');
+    sCard('Items Bumped', bumps.length + '', 'across all services', 'var(--primary)');
 
   renderC4Table(projectedItems, 'all');
 };
+
 // Show the Plan popup
 window.showC4Plan = function() {
   const planBtn = document.getElementById('c4PlanBtn');
