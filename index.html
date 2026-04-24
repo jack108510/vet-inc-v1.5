@@ -264,8 +264,8 @@
  .btn-activate.secondary:hover { background: #e2e8f0; }
  .btn-activate.success { background: linear-gradient(135deg, #16a34a, #22c55e); color: #fff; }
  
- .btn-analytics { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.72rem; font-weight: 600; background: rgba(37,99,235,.08); color: var(--primary); border: 1px solid rgba(37,99,235,.2); cursor: pointer; transition: all 0.15s; }
- .btn-analytics:hover { background: rgba(37,99,235,.15); }
+ .btn-analytics { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.85rem; border-radius: 10px; font-size: 0.72rem; font-weight: 700; background: var(--primary); color: #fff; border: none; cursor: pointer; transition: all 0.15s; }
+ .btn-analytics:hover { filter: brightness(1.1); }
  
  /* Campaign Analytics Modal */
  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.4); backdrop-filter: blur(4px); z-index: 999; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
@@ -1031,10 +1031,10 @@
 .campaign-btn{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:.8rem;font-weight:700;}
 .price-review-btn{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;border:none;border-radius:10px;padding:10px 14px;font-size:.85rem;font-weight:700;cursor:pointer}
 .price-review-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(37,99,235,.2)}
-.implement-btn{background:#16a34a;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:.82rem;font-weight:700;cursor:pointer}
-.implement-btn:hover{filter:brightness(1.05)}
-.report-btn{background:#7c3aed;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:.82rem;font-weight:700;cursor:pointer}
-.report-btn:hover{filter:brightness(1.05)}
+.implement-btn{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:.82rem;font-weight:700;cursor:pointer}
+.implement-btn:hover{filter:brightness(1.1)}
+.report-btn{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:.82rem;font-weight:700;cursor:pointer}
+.report-btn:hover{filter:brightness(1.1)}
 .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.6);display:none;align-items:center;justify-content:center;z-index:10000}
 .modal-card{background:#fff;border:1px solid var(--border);border-radius:16px;max-width:560px;max-height:80vh;display:flex;flex-direction:column;width:92%;padding:18px;box-shadow:0 18px 40px rgba(15,23,42,.2)}
 .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
@@ -1246,7 +1246,39 @@
       <div class="progress-bar-wrap"><div class="progress-bar"><div class="fill" id="c4ProgressFill" style="width:0%"></div></div></div>
       <div class="progress-label" id="c4ProgressLabel">0/0 implemented</div>
       <button class="btn-analytics" onclick="openCampaignAnalytics('shoppables')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> Analytics</button>
-     </div></div></div><div id="c4Summary" style="display:flex;gap:2rem;padding:1rem 1.75rem;border-bottom:1px solid var(--border);background:#f8faff;flex-wrap:wrap"></div><button class="campaign-toggle" onclick="toggleCampaign(this)">See More <span class="toggle-arrow">&#9662;</span></button>
+     </div></div></div>
+
+<!-- Exam Drop Slider -->
+<div id="c4Slider" style="padding:0.75rem 1.75rem;border-bottom:1px solid var(--border);background:#fffbeb">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div style="font-size:0.78rem;font-weight:700;color:var(--text)">Exam Price Drop</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:1.1rem;font-weight:900;color:var(--primary)" id="c4DropAmount">$0</span>
+      <span style="font-size:0.68rem;color:var(--muted)">per exam</span>
+    </div>
+  </div>
+  <input type="range" id="c4DropSlider" min="0" max="50" value="0" step="1" style="width:100%;accent-color:var(--primary)">
+  <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--muted);margin-top:2px">
+    <span>No drop</span>
+    <span>$50 drop</span>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:0.72rem;font-weight:600;color:var(--muted)">Risk Level:</span>
+      <span id="c4RiskBadge" style="font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:4px;background:#dcfce7;color:#16a34a">None</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:0.72rem;font-weight:600;color:var(--muted)">Pairings need +</span>
+      <span id="c4RequiredBump" style="font-size:0.85rem;font-weight:800;color:var(--primary)">0%</span>
+      <span style="font-size:0.68rem;color:var(--muted)">to break even</span>
+    </div>
+  </div>
+  <div style="margin-top:6px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden">
+    <div id="c4RiskBar" style="height:100%;width:0%;border-radius:3px;transition:width 0.3s,background 0.3s;background:#16a34a"></div>
+  </div>
+</div>
+
+<div id="c4Summary" style="display:flex;gap:2rem;padding:1rem 1.75rem;border-bottom:1px solid var(--border);background:#f8faff;flex-wrap:wrap"></div><button class="campaign-toggle" onclick="toggleCampaign(this)">See More <span class="toggle-arrow">&#9662;</span></button>
 <div class="campaign-body" style="display:none"><div style="padding:0.6rem 1.75rem;border-bottom:1px solid var(--border);display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap"><span style="font-size:0.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-right:0.5rem">Filter:</span><button class="c1-filter active" onclick="c4Filter(this,'all')">All</button><button class="c1-filter" onclick="c4Filter(this,'drops')">Exam Drops</button><button class="c1-filter" onclick="c4Filter(this,'bumps')">Pairing Bumps</button></div><div class="table-scroll"><table><thead><tr><th>Code</th><th>Description</th><th class="num">Type</th><th class="num">Current</th><th class="num">New</th><th class="num">Delta</th><th class="num">Vol / yr</th><th class="num">Impact / yr</th></tr></thead><tbody id="c4Table"></tbody></table></div></div></div></div></section><!--
  SECTION 3: Inventory Intelligence (Coming Soon)
  --><section id="tab-inventory" class="section"><div style="min-height:60vh;display:flex;align-items:center;justify-content:center;background:#eff6ff"><div style="background:#fff;border-radius:16px;box-shadow:0 2px 16px rgba(37,99,235,0.08);padding:3rem 4rem;text-align:center;max-width:520px"><div style="font-size:3rem;margin-bottom:1rem">🔒</div><div style="font-size:1.4rem;font-weight:700;color:#1e293b;margin-bottom:0.5rem">Inventory Intelligence Locked</div><div style="font-size:0.95rem;color:#94a3b8">Temporarily locked while we audit COGS and revenue data.</div></div></div></section><!--
@@ -5115,6 +5147,70 @@ function sCard(label, value, sub, color) {
   return '<div style="text-align:center"><div style="font-size:0.72rem;color:var(--muted)">' + label + '</div><div style="font-size:1.3rem;font-weight:800;color:' + color + '">' + value + '</div><div style="font-size:0.72rem;color:var(--muted)">' + sub + '</div></div>';
 }
 
+// Exam drop slider logic
+(function() {
+  const slider = document.getElementById('c4DropSlider');
+  if (!slider) return;
+  slider.addEventListener('input', function() {
+    const dropAmt = parseInt(this.value);
+    document.getElementById('c4DropAmount').textContent = '$' + dropAmt;
+
+    // Risk level based on drop amount
+    const riskBar = document.getElementById('c4RiskBar');
+    const riskBadge = document.getElementById('c4RiskBadge');
+    const reqBump = document.getElementById('c4RequiredBump');
+    
+    let riskLabel, riskColor, riskBg, riskPct;
+    if (dropAmt === 0) { riskLabel = 'None'; riskColor = '#16a34a'; riskBg = '#dcfce7'; riskPct = 0; }
+    else if (dropAmt <= 5) { riskLabel = 'Low'; riskColor = '#16a34a'; riskBg = '#dcfce7'; riskPct = 10; }
+    else if (dropAmt <= 10) { riskLabel = 'Low'; riskColor = '#65a30d'; riskBg = '#ecfccb'; riskPct = 20; }
+    else if (dropAmt <= 15) { riskLabel = 'Moderate'; riskColor = '#ca8a04'; riskBg = '#fef9c3'; riskPct = 35; }
+    else if (dropAmt <= 20) { riskLabel = 'Moderate'; riskColor = '#ea580c'; riskBg = '#fff7ed'; riskPct = 50; }
+    else if (dropAmt <= 30) { riskLabel = 'High'; riskColor = '#dc2626'; riskBg = '#fef2f2'; riskPct = 70; }
+    else if (dropAmt <= 40) { riskLabel = 'Very High'; riskColor = '#dc2626'; riskBg = '#fee2e2'; riskPct = 85; }
+    else { riskLabel = 'Extreme'; riskColor = '#991b1b'; riskBg = '#fecaca'; riskPct = 100; }
+    
+    riskBar.style.width = riskPct + '%';
+    riskBar.style.background = riskColor;
+    riskBadge.textContent = riskLabel;
+    riskBadge.style.color = riskColor;
+    riskBadge.style.background = riskBg;
+
+    // Calculate required pairing bump % to break even
+    // Get exam usage from the data
+    if (!window.serviceData) return;
+    const examCodes = ['HC', 'HEF'];
+    let examVolume = 0;
+    (window.serviceData || []).forEach(r => {
+      if (examCodes.includes(r.code)) {
+        examVolume += parseFloat(r.total_amount || 0);
+      }
+    });
+    
+    // Total non-exam revenue for pairing bump base
+    let pairingRev = 0;
+    (window.serviceData || []).forEach(r => {
+      if (!examCodes.includes(r.code)) {
+        pairingRev += parseFloat(r.total_amount || 0);
+      }
+    });
+
+    // Lost revenue = dropAmt * exam_count
+    let examCount = 0;
+    (window.serviceData || []).forEach(r => {
+      if (examCodes.includes(r.code)) examCount += (r.txn_count || 1);
+    });
+    const lostRevenue = dropAmt * examCount;
+    
+    // Required bump % = lostRevenue / pairingRev * 100
+    const bumpPct = pairingRev > 0 ? (lostRevenue / pairingRev * 100) : 0;
+    reqBump.textContent = bumpPct.toFixed(1) + '%';
+
+    // Re-run projections with this drop amount
+    if (typeof recalcShoppables === 'function') recalcShoppables(dropAmt);
+  });
+})();
+
 async function loadShoppables() {
   try {
     // 1. Check if campaign is active
@@ -5131,6 +5227,7 @@ async function loadShoppables() {
       document.getElementById('c4StatusBadge').className = 'badge active';
       document.getElementById('c4StatusBadge').innerHTML = '<span>&#10003;</span> Active';
       document.getElementById('c4ActivateBtn').style.display = 'none';
+      document.getElementById('c4Slider').style.display = 'none';
       
       // Show progress
       document.getElementById('c4Progress').style.display = 'flex';
@@ -5238,6 +5335,87 @@ async function loadShoppables() {
     document.getElementById('c4Table').innerHTML = '<tr><td colspan="8" style="color:var(--red)">Error: ' + e.message + '</td></tr>';
   }
 }
+
+// Recalculate shoppables preview based on slider drop amount
+window.recalcShoppables = function(dropAmt) {
+  if (!pricesData || !serviceData || !treatmentsData) return;
+  
+  const examCodes = ['HC', 'HEF'];
+  
+  const usageMap = {};
+  (serviceData || []).forEach(r => {
+    if (!r.code) return;
+    if (!usageMap[r.code]) usageMap[r.code] = { count: 0, rev: 0 };
+    usageMap[r.code].count += (r.txn_count || 1);
+    usageMap[r.code].rev += parseFloat(r.total_amount || r.amount) || 0;
+  });
+
+  const nameLookup = {};
+  (treatmentsData || []).forEach(t => { nameLookup[t.code] = (itemNamesMap && itemNamesMap[t.code]) || t.name || t.code; });
+
+  const priceMap = {};
+  (pricesData || []).forEach(p => { if (p.treatment_code && p.price) priceMap[p.treatment_code] = p.price; });
+
+  const projectedItems = [];
+
+  // Calculate bump % needed to break even
+  let examCount = 0;
+  (serviceData || []).forEach(r => { if (examCodes.includes(r.code)) examCount += (r.txn_count || 1); });
+  const lostRevenue = dropAmt * examCount;
+  let pairingRev = 0;
+  (serviceData || []).forEach(r => { if (!examCodes.includes(r.code)) pairingRev += parseFloat(r.total_amount || 0); });
+  const pairingBumpPct = pairingRev > 0 ? lostRevenue / pairingRev : 0;
+
+  // Exam drops
+  for (const code of examCodes) {
+    const price = priceMap[code];
+    if (!price) continue;
+    const usage = usageMap[code];
+    if (!usage) continue;
+    const newPrice = Math.max(0, price - dropAmt);
+    const annualVol = Math.round(usage.rev / price);
+    const drop = (price - newPrice) * annualVol;
+    projectedItems.push({
+      treatment_code: code, treatment_name: nameLookup[code] || code,
+      old_price: price, suggested_price: newPrice,
+      annual_volume: annualVol, potential_uplift: -drop
+    });
+  }
+
+  // Top pairing bumps with calculated bump %
+  const nonExamCodes = Object.keys(usageMap).filter(c => !examCodes.includes(c) && priceMap[c]).sort((a, b) => usageMap[b].rev - usageMap[a].rev).slice(0, 20);
+  for (const code of nonExamCodes) {
+    const price = priceMap[code];
+    const usage = usageMap[code];
+    if (!price || !usage || usage.count < 10) continue;
+    const newPrice = Math.ceil(price * (1 + pairingBumpPct) * 100) / 100;
+    const annualVol = Math.round(usage.rev / price);
+    const bump = (newPrice - price) * annualVol;
+    projectedItems.push({
+      treatment_code: code, treatment_name: nameLookup[code] || code,
+      old_price: price, suggested_price: newPrice,
+      annual_volume: annualVol, potential_uplift: bump
+    });
+  }
+
+  projectedItems.sort((a, b) => b.potential_uplift - a.potential_uplift);
+  c4ProjectedItems = projectedItems;
+  window.c4Items = projectedItems;
+
+  const drops = projectedItems.filter(i => i.potential_uplift < 0);
+  const bumps = projectedItems.filter(i => i.potential_uplift >= 0);
+  const totalLoss = Math.abs(drops.reduce((s, i) => s + i.potential_uplift, 0));
+  const totalGain = bumps.reduce((s, i) => s + i.potential_uplift, 0);
+  const net = totalGain - totalLoss;
+
+  document.getElementById('c4Summary').innerHTML =
+    sCard('Revenue at Risk', '-$' + totalLoss.toLocaleString('en-US', { maximumFractionDigits: 0 }), 'exam price drops', 'var(--red)') +
+    sCard('Recovery Potential', '+$' + totalGain.toLocaleString('en-US', { maximumFractionDigits: 0 }), 'pairing item bumps', 'var(--green)') +
+    sCard('Net Impact', (net >= 0 ? '+' : '-') + '$' + Math.abs(net).toLocaleString('en-US', { maximumFractionDigits: 0 }), 'projected', net >= 0 ? 'var(--green)' : 'var(--red)') +
+    sCard('Items', projectedItems.length + '', drops.length + ' drops + ' + bumps.length + ' bumps', 'var(--primary)');
+
+  renderC4Table(projectedItems, 'all');
+};
 
 // Activate shoppables campaign
 window.activateShoppables = async function() {
