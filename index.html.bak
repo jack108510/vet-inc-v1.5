@@ -5391,40 +5391,40 @@ window.recalcShoppables = function(dropAmt) {
 
   const projectedItems = [];
 
-  // Exam drop — 565 is total for both HC+HEF combined (verified, last 12mo excl ETL spikes)
-  const totalExamCount = 565;
-  const examPrice = 80;
-  const lostRevenue = dropAmt * totalExamCount;
+  // Calculate total lost revenue from exam drops
+  let examCount = 565; // verified unique exam transactions (last 12mo, excl ETL spikes)
+  const examPrice = 80; // verified current price for HC/HEF
+  const lostRevenue = dropAmt * examCount;
 
-  projectedItems.push({
-    treatment_code: 'HC/HEF', treatment_name: 'Health Exam (Canine & Feline)',
-    old_price: examPrice, suggested_price: Math.max(0, examPrice - dropAmt),
-    annual_volume: totalExamCount, potential_uplift: -lostRevenue,
-    pair_count: totalExamCount, is_pairing: false
-  });
+  // Exam drops - hardcoded since HC/HEF not in service_usage_agg
+  for (const code of examCodes) {
+    const price = priceMap[code] || examPrice;
+    const newPrice = Math.max(0, price - dropAmt);
+    const drop = (price - newPrice) * examCount;
+    projectedItems.push({
+      treatment_code: code, treatment_name: nameLookup[code] || (code === 'HC' ? 'Health Exam' : 'Health Exam Follow-up'),
+      old_price: price, suggested_price: newPrice,
+      annual_volume: examCount, potential_uplift: -lostRevenue,
+      pair_count: examCount, is_pairing: false
+    });
+  }
 
   // Use REAL exam pairings from materialized view
   if (examPairings.length > 0 && lostRevenue > 0) {
-    // Top 10 items by pairing frequency — highest volume = smallest uniform bump needed
-    const topPairings = examPairings
-      .filter(p => (priceMap[p.item_code] || p.avg_price) > 0)
-      .sort((a, b) => b.pair_count - a.pair_count)
-      .slice(0, 10);
+    // Distribute the needed recovery proportionally across paired items
+    const totalPairRevenue = examPairings.reduce((s, p) => s + parseFloat(p.pair_revenue || 0), 0);
     
-    // Single uniform bump % that exactly recovers the lost revenue
-    // totalBase = sum of (price × annual volume) for each top pairing
-    const totalBase = topPairings.reduce((s, p) => {
-      const price = priceMap[p.item_code] || p.avg_price;
-      return s + (price * p.pair_count);
-    }, 0);
-    const uniformBumpPct = totalBase > 0 ? lostRevenue / totalBase : 0;
-    
-    for (const pairing of topPairings) {
+    for (const pairing of examPairings) {
       const code = pairing.item_code;
       const price = priceMap[code] || pairing.avg_price;
       if (!price) continue;
       const annualVol = pairing.pair_count;
-      const newPrice = Math.ceil(price * (1 + uniformBumpPct) * 100) / 100;
+      // Each item's share of the bump is proportional to its pairing revenue
+      const share = totalPairRevenue > 0 ? (pairing.pair_revenue / totalPairRevenue) : 0;
+      const itemRecovery = lostRevenue * share;
+      const bumpPerUnit = annualVol > 0 ? itemRecovery / annualVol : 0;
+      const bumpPct = price > 0 ? bumpPerUnit / price : 0;
+      const newPrice = Math.ceil(price * (1 + bumpPct) * 100) / 100;
       const bump = (newPrice - price) * annualVol;
       
       projectedItems.push({
@@ -5471,6 +5471,7 @@ window.recalcShoppables = function(dropAmt) {
 
   renderC4Table(projectedItems, 'all');
 };
+
 // Show the Plan popup
 window.showC4Plan = function() {
   const planBtn = document.getElementById('c4PlanBtn');
