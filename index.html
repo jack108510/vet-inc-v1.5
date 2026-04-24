@@ -5450,7 +5450,11 @@ window.showC4Plan = function() {
   
   const dropAmt = parseInt(document.getElementById('c4DropSlider').value);
   const items = c4ProjectedItems.length ? c4ProjectedItems : window.c4Items;
-  if (!items.length) return;
+  if (!items.length) {
+    document.getElementById('c4PlanContent').innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted)">Drag the slider first to set an exam drop amount.</div>';
+    document.getElementById('c4PlanModal').style.display = 'block';
+    return;
+  }
   
   const drops = items.filter(i => i.potential_uplift < 0);
   const bumps = items.filter(i => i.potential_uplift >= 0);
