@@ -87,6 +87,19 @@
  .tab-btn.active { background: var(--primary); color: #fff; }
  .tab-btn .tab-icon { font-size: 0.95rem; }
 
+ .trust-banner{
+ background:linear-gradient(90deg,#eff6ff,#f8fbff);
+ border-bottom:1px solid var(--border);
+ padding:10px 2rem;
+ display:flex;
+ gap:14px;
+ align-items:center;
+ flex-wrap:wrap;
+ }
+ .trust-pill{font-size:.72rem;font-weight:700;color:var(--primary);background:#dbeafe;border:1px solid #bfdbfe;border-radius:999px;padding:4px 10px;letter-spacing:.02em}
+ .trust-copy{font-size:.82rem;color:var(--text);font-weight:600}
+ .trust-copy .muted{color:var(--muted);font-weight:500}
+
  /* SECTIONS */
  .section { display: none; padding: 2rem; animation: fadeIn 0.2s ease; }
  .section.active { display: block; }
@@ -1076,7 +1089,8 @@
  </button><button class="tab-btn" onclick="showTab('marketing', this)" style="pointer-events:none;opacity:0.5" title="Locked"><span class="tab-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12l-18-5v-2z"/><path d="M7 13v6"/></svg></span> Marketing</button><button class="tab-btn" onclick="showTab('inventory', this)" style="pointer-events:none;opacity:0.5" title="Locked"><span class="tab-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></span> Inventory Intelligence
  </button><button class="tab-btn" onclick="showTab('ai', this)" style="pointer-events:none;opacity:0.5" title="Locked"><span class="tab-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span> AI Assistant
  </button><button class="tab-btn" onclick="showTab('settings', this)"><span class="tab-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span> Settings
- </button></nav><!--
+ </button></nav>
+<div class="trust-banner"><span class="trust-pill">LIVE DEMO</span><span class="trust-copy">This is a live interactive demo using realistic simulated clinic data. <span class="muted">Compatible with AVImark, Cornerstone, and ezyVet.</span></span></div><!--
  SECTION 1: Analytics & KPIs  Widget Board
  --><section id="tab-analytics" class="section active"><style>
 .uplift-board{padding:2rem;max-width:1100px;margin:0 auto}
