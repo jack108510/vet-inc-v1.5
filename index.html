@@ -1073,14 +1073,16 @@
 .modal-actions .primary{background:var(--primary);color:#fff}
 
 </style></head><body>
-<div id="loginGate" style="display:none">
-  <div style="background:#111827;padding:24px;border-radius:14px;min-width:320px">
-    <div style="font-size:1.1rem;font-weight:800;margin-bottom:8px">Vet INC Login</div>
-    <input id="loginEmail" placeholder="Email" style="width:100%;padding:10px;margin:6px 0;border-radius:8px;border:1px solid #334155;background:#0b1220;color:#fff" />
-    <input id="loginPass" type="password" placeholder="Password" style="width:100%;padding:10px;margin:6px 0;border-radius:8px;border:1px solid #334155;background:#0b1220;color:#fff" />
-    <button id="loginBtn" style="width:100%;padding:10px;margin-top:8px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-weight:700">Sign in</button>
-    <button id="guestBtn" style="width:100%;padding:10px;margin-top:8px;background:#1f2937;color:#fff;border:none;border-radius:8px;font-weight:700">Enter without login</button>
-    <div id="loginErr" style="margin-top:6px;color:#fca5a5;font-size:.85rem"></div>
+<div id="loginGate" style="display:flex;position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <div style="background:#111827;padding:40px;border-radius:16px;min-width:360px;box-shadow:0 25px 50px rgba(0,0,0,0.5);border:1px solid #1e293b">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:28px;font-weight:800;color:#fff;margin-bottom:4px">Vet <span style="color:#2563eb">INC</span></div>
+      <div style="color:#94a3b8;font-size:14px">Rosslyn Veterinary Clinic</div>
+    </div>
+    <input id="loginUser" placeholder="Username" style="width:100%;padding:12px 14px;margin:6px 0;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#fff;font-size:14px;outline:none" onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#334155'" />
+    <input id="loginPass" type="password" placeholder="Password" style="width:100%;padding:12px 14px;margin:6px 0;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#fff;font-size:14px;outline:none" onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#334155'" onkeydown="if(event.key==='Enter')document.getElementById('loginBtn').click()" />
+    <button id="loginBtn" onclick="attemptLogin()" style="width:100%;padding:12px;margin-top:12px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">Sign In</button>
+    <div id="loginErr" style="margin-top:10px;color:#fca5a5;font-size:13px;text-align:center;min-height:18px"></div>
   </div>
 </div>
 <!-- HEADER --><header class="header"><div class="header-left"><div class="logo-wrap"><div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><div class="logo-text">Vet <span>INC</span></div></div><div class="header-divider"></div><div class="clinic-name" id="clinicName">Rosslyn Veterinary Clinic</div></div><div class="header-right"><span class="last-updated" id="lastUpdated">Loading data...</span><span class="btn-upload" style="cursor:default;pointer-events:none;opacity:0.75">&#9679; Live</span></div></header><!-- TAB NAV --><nav class="tab-nav"><button class="tab-btn active" onclick="showTab('analytics', this)"><span class="tab-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg></span> Key Indicators
@@ -6040,11 +6042,67 @@ const SUPA_URL = "https://zbcljqrfxlvdpjtumtzy.supabase.co";
 const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiY2xqcXJmeGx2ZHBqdHVtdHp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5NDI0NjAsImV4cCI6MjA5MTUxODQ2MH0.leck03bYM7wgb2K1RYSo6GLFvhUKDTwXHfGt232WIR4";
 const supa = supabase.createClient(SUPA_URL, SUPA_ANON);
 
-// login disabled for now
-function showLogin(){}
+// Auth credentials (SHA-256 hashed)
+const VALID_USER = "Jack Wilde";
+const VALID_HASH = "e0cdb7738cec9700c868887ea12414f537df471d0fd19288bed7525629ae2632";
 
-(async ()=>{
-  const g=document.getElementById('loginGate'); if(g) g.remove();
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function attemptLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginErr');
+  err.textContent = '';
+  
+  if (!user || !pass) { err.textContent = 'Enter username and password'; return; }
+  
+  const hash = await sha256(pass);
+  
+  // Check against Supabase vet_auth table first, fallback to hardcoded
+  let authenticated = false;
+  
+  try {
+    const SB_URL = 'https://rnqhhzatlxmyvccdvqkr.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWhoemF0bHhteXZjY2R2cWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTQ5ODUsImV4cCI6MjA5MDU5MDk4NX0.zokle21pVEPG5bIOFiyZIWYkYIwhkolWNOhJ7Cbub30';
+    const res = await fetch(`${SB_URL}/rest/v1/vet_auth?username=eq.${encodeURIComponent(user)}&active=eq.true`, {
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
+    });
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows.length > 0 && rows[0].password_hash === hash) {
+        authenticated = true;
+        localStorage.setItem('vetinc_user', user);
+        localStorage.setItem('vetinc_clinic', rows[0].clinic || 'Rosslyn Vet Clinic');
+      }
+    }
+  } catch(e) {}
+  
+  // Fallback to hardcoded credentials
+  if (!authenticated && user === VALID_USER && hash === VALID_HASH) {
+    authenticated = true;
+    localStorage.setItem('vetinc_user', user);
+    localStorage.setItem('vetinc_clinic', 'Rosslyn Vet Clinic');
+  }
+  
+  if (authenticated) {
+    const g = document.getElementById('loginGate');
+    if (g) g.remove();
+  } else {
+    err.textContent = 'Invalid credentials';
+    document.getElementById('loginPass').value = '';
+  }
+}
+
+// Check existing session on load
+(function() {
+  const user = localStorage.getItem('vetinc_user');
+  if (user) {
+    const g = document.getElementById('loginGate');
+    if (g) g.remove();
+  }
 })();
 </script>
 <div class="modal-backdrop" id="priceReviewModal">
