@@ -4344,10 +4344,10 @@ const WidgetBoard = (() => {
 //
 // Clinic Settings Module
 //
+const ACTIVE_CLINIC_ID = localStorage.getItem('vetinc_clinic_id') || 'rosslyn';
 const ClinicSettings = (() => {
   const SB_URL = 'https://rnqhhzatlxmyvccdvqkr.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWhoemF0bHhteXZjY2R2cWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTQ5ODUsImV4cCI6MjA5MDU5MDk4NX0.zokle21pVEPG5bIOFiyZIWYkYIwhkolWNOhJ7Cbub30';
-  const CLINIC_ID = 'rosslyn';
 
   const DEFAULT_FIXED = [
     { label: 'Rent / Facility', amount: 0 },
@@ -4420,7 +4420,7 @@ const ClinicSettings = (() => {
   async function saveToSupabase() {
     try {
       const payload = {
-        clinic_id: CLINIC_ID,
+        clinic_id: ACTIVE_CLINIC_ID,
         fixed_costs: fixedCosts,
         utility_costs: utilityCosts,
         updated_at: new Date().toISOString()
@@ -4447,7 +4447,7 @@ const ClinicSettings = (() => {
 
   async function loadFromSupabase() {
     try {
-      const res = await fetch(SB_URL + '/rest/v1/clinic_settings?clinic_id=eq.' + CLINIC_ID + '&limit=1', {
+      const res = await fetch(SB_URL + '/rest/v1/clinic_settings?clinic_id=eq.' + ACTIVE_CLINIC_ID + '&limit=1', {
         headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, Accept: 'application/json' }
       });
       if (res.status === 404) {
@@ -4908,8 +4908,7 @@ const CampaignUI = (() => {
   async function loadCampaignState() {
     for (const [type, num] of Object.entries(campaigns)) {
       try {
-        const res = await fetch(`https://rnqhhzatlxmyvccdvqkr.supabase.co/rest/v1/campaigns?select=*&clinic_id=eq.rosslyn&campaign_type=eq.${type}&status=eq.active&limit=1`, {
-          headers: {
+        const res = await fetch(`https://rnqhhzatlxmyvccdvqkr.supabase.co/rest/v1/campaigns?select=*&clinic_id=eq.${ACTIVE_CLINIC_ID}&campaign_type=eq.${type}&status=eq.active&limit=1`, {          headers: {
             apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWhoemF0bHhteXZjY2R2cWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTQ5ODUsImV4cCI6MjA5MDU5MDk4NX0.zokle21pVEPG5bIOFiyZIWYkYIwhkolWNOhJ7Cbub30',
             Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWhoemF0bHhteXZjY2R2cWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTQ5ODUsImV4cCI6MjA5MDU5MDk4NX0.zokle21pVEPG5bIOFiyZIWYkYIwhkolWNOhJ7Cbub30'
           }
@@ -5001,7 +5000,7 @@ window.activateCampaign = async function(type) {
         Prefer: 'return=representation'
       },
       body: JSON.stringify({
-        clinic_id: 'rosslyn',
+        clinic_id: ACTIVE_CLINIC_ID,
         campaign_type: type,
         name: type === 'inflation' ? 'Inflation Price Adjustment' :
               type === '99-pricing' ? '.99 Pricing Recovery' : 'Inventory Micro Margin',
@@ -5060,7 +5059,7 @@ window.openCampaignAnalytics = async function(type) {
 
   try {
     // Get campaign
-    const res = await fetch(`https://rnqhhzatlxmyvccdvqkr.supabase.co/rest/v1/campaigns?select=*&clinic_id=eq.rosslyn&campaign_type=eq.${type}&status=eq.active&limit=1`, {
+    const res = await fetch(`https://rnqhhzatlxmyvccdvqkr.supabase.co/rest/v1/campaigns?select=*&clinic_id=eq.${ACTIVE_CLINIC_ID}&campaign_type=eq.${type}&status=eq.active&limit=1`, {
       headers: {
         apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWhoemF0bHhteXZjY2R2cWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTQ5ODUsImV4cCI6MjA5MDU5MDk4NX0.zokle21pVEPG5bIOFiyZIWYkYIwhkolWNOhJ7Cbub30',
         Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJucWhoemF0bHhteXZjY2R2cWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMTQ5ODUsImV4cCI6MjA5MDU5MDk4NX0.zokle21pVEPG5bIOFiyZIWYkYIwhkolWNOhJ7Cbub30'
@@ -5267,7 +5266,7 @@ function sCard(label, value, sub, color) {
 async function loadShoppables() {
   try {
     // 1. Check if campaign is active
-    const res = await fetch(SB_URL + '/rest/v1/campaigns?select=*&clinic_id=eq.rosslyn&campaign_type=eq.shoppables&status=eq.active&limit=1', {
+    const res = await fetch(SB_URL + '/rest/v1/campaigns?select=*&clinic_id=eq.${ACTIVE_CLINIC_ID}&campaign_type=eq.shoppables&status=eq.active&limit=1', {
       headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
     });
     const camps = await res.json();
@@ -5600,7 +5599,7 @@ window.activateShoppables = async function() {
       method: 'POST',
       headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', Prefer: 'return=representation' },
       body: JSON.stringify({
-        clinic_id: 'rosslyn', campaign_type: 'shoppables',
+        clinic_id: ACTIVE_CLINIC_ID, campaign_type: 'shoppables',
         name: 'Shoppables — Exam Drop Initiative', status: 'active',
         activated_at: new Date().toISOString(),
         total_items: items.length, implemented_items: 0,
@@ -6076,6 +6075,7 @@ async function attemptLogin() {
         authenticated = true;
         localStorage.setItem('vetinc_user', user);
         localStorage.setItem('vetinc_clinic', rows[0].clinic || 'Rosslyn Vet Clinic');
+        localStorage.setItem('vetinc_clinic_id', rows[0].clinic_id || 'rosslyn');
       }
     }
   } catch(e) {}
@@ -6085,6 +6085,7 @@ async function attemptLogin() {
     authenticated = true;
     localStorage.setItem('vetinc_user', user);
     localStorage.setItem('vetinc_clinic', 'Rosslyn Vet Clinic');
+    localStorage.setItem('vetinc_clinic_id', 'rosslyn');
   }
   
   if (authenticated) {
@@ -6102,6 +6103,12 @@ async function attemptLogin() {
   if (user) {
     const g = document.getElementById('loginGate');
     if (g) g.remove();
+    // Set clinic name in header
+    const clinicName = localStorage.getItem('vetinc_clinic');
+    if (clinicName) {
+      const el = document.getElementById('clinicName');
+      if (el) el.textContent = clinicName;
+    }
   }
 })();
 </script>
